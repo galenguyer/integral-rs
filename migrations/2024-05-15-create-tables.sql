@@ -1,6 +1,7 @@
 CREATE TABLE users (
-    email TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     display_name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
     phone TEXT,
     password TEXT NOT NULL,
     created_at integer(8) not null default (strftime('%s','now')),
@@ -27,3 +28,5 @@ CREATE TABLE comments (
     created_at integer(8) not null default (strftime('%s','now')),
     created_by TEXT REFERENCES users(id)
 );
+
+

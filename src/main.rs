@@ -54,6 +54,14 @@ async fn main() {
                             .route("/whoami", routing::get(routes::v0::login::whoami))
                             .route("/login", routing::post(routes::v0::login::login))
                             .route("/signup", routing::post(routes::v0::login::create_user)),
+                    )
+                    .nest(
+                        "/jobs",
+                        Router::new().route(
+                            "/",
+                            routing::get(routes::v0::jobs::get_all_jobs)
+                                .post(routes::v0::jobs::create_job),
+                        ).route("/comments", routing::post(routes::v0::jobs::add_comment)),
                     ),
             ),
         )
