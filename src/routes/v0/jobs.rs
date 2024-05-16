@@ -37,6 +37,7 @@ pub async fn get_all_jobs(
 pub(crate) struct CreateJob {
     pub synopsis: String,
     pub location: Option<String>,
+    pub comments: Option<Vec<String>>,
 }
 
 pub async fn create_job(
@@ -45,7 +46,25 @@ pub async fn create_job(
     Json(data): Json<CreateJob>,
 ) -> impl IntoResponse {
     let created_job = db::jobs::create_job(&pool, &data.synopsis, data.location, &user.sub).await;
-    match created_job {
+    if let Err(e) = created_job {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!(e.to_string())),
+        );
+    }
+    let created_job = created_job.unwrap();
+
+    if let Some(comments) = data.comments {
+        for comment in comments {
+            if let Err(e) = db::jobs::add_comment(&pool, &created_job.id, &comment, &user.sub).await
+            {
+                tracing::error!("{:?}", e);
+            }
+        }
+    }
+
+    let job = db::jobs::get_job_by_id(&pool, &created_job.id).await;
+    match job {
         Ok(job) => (StatusCode::OK, Json(json!(job))),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -53,7 +72,6 @@ pub async fn create_job(
         ),
     }
 }
-
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -67,7 +85,8 @@ pub async fn add_comment(
     Jwt(user): Jwt,
     Json(data): Json<CreateComment>,
 ) -> impl IntoResponse {
-    let created_comment = db::jobs::add_comment(&pool, &data.job_id, &data.comment, &user.sub).await;
+    let created_comment =
+        db::jobs::add_comment(&pool, &data.job_id, &data.comment, &user.sub).await;
     match created_comment {
         Ok(c) => (StatusCode::OK, Json(json!(c))),
         Err(e) => (

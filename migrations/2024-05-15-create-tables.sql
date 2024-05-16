@@ -29,4 +29,3 @@ CREATE TABLE comments (
     created_by TEXT REFERENCES users(id)
 );
 
-
