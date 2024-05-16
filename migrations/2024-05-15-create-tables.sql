@@ -1,12 +1,13 @@
 CREATE TABLE users (
     id TEXT PRIMARY KEY,
     display_name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE,
     phone TEXT,
-    password TEXT NOT NULL,
+    password TEXT,
     created_at integer(8) not null default (strftime('%s','now')),
     admin BOOLEAN NOT NULL DEFAULT false,
-    enabled BOOLEAN NOT NULL DEFAULT true
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    dispatcher BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE jobs (
@@ -19,7 +20,7 @@ CREATE TABLE jobs (
     closed_by TEXT REFERENCES users(id)
 );
 
--- TODO: Caller information
+-- TODO: Caller information (properly)
 
 CREATE TABLE comments (
     id TEXT PRIMARY KEY,
@@ -29,3 +30,26 @@ CREATE TABLE comments (
     created_by TEXT REFERENCES users(id)
 );
 
+CREATE TABLE resources (
+    id TEXT PRIMARY KEY,
+    display_name TEXT NOT NULL,
+    comment TEXT
+);
+
+CREATE TABLE resource_user_bindings (
+    id TEXT PRIMARY KEY,
+    resource_id TEXT NOT NULL REFERENCES resources(id),
+    user_id TEXT NOT NULL REFERENCES resources(id),
+    created_at integer(8) not null default (strftime('%s','now')),
+    removed_at integer(8)
+);
+
+CREATE TABLE assignments (
+    id TEXT PRIMARY KEY,
+    resource_id TEXT REFERENCES resources(id),
+    job_id TEXT REFERENCES jobs(id),
+    assigned_at integer(8) not null default (strftime('%s','now')),
+    removed_at integer(8),
+    assigned_by TEXT REFERENCES users(id),
+    removed_by TEXT REFERENCES users(id)
+);

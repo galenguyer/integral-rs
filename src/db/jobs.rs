@@ -28,10 +28,10 @@ pub struct Comment {
 }
 
 pub async fn get_all_jobs(pool: &Pool<Sqlite>) -> Result<Vec<Job>, sqlx::Error> {
-    let zones = sqlx::query_as::<_, Job>(&strings::GET_ALL_JOBS)
+    let jobs = sqlx::query_as::<_, Job>(&strings::GET_ALL_JOBS)
         .fetch_all(pool)
         .await?;
-    Ok(zones)
+    Ok(jobs)
 }
 
 pub async fn get_job_by_id(pool: &Pool<Sqlite>, id: &str) -> Result<Option<Job>, sqlx::Error> {

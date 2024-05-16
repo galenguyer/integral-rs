@@ -62,7 +62,8 @@ async fn main() {
                             routing::get(routes::v0::jobs::get_all_jobs)
                                 .post(routes::v0::jobs::create_job),
                         ).route("/comments", routing::post(routes::v0::jobs::add_comment)),
-                    ),
+                    )
+                    .route("/resources", routing::get(routes::v0::resources::get_all_resources)),
             ),
         )
         .layer(Extension(sqlite_pool));
