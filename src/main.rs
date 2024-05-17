@@ -66,7 +66,8 @@ async fn main() {
                                 get(routes::v0::jobs::get_all_jobs)
                                     .post(routes::v0::jobs::create_job),
                             )
-                            .route("/comments", post(routes::v0::jobs::add_comment)),
+                            .route("/comments", post(routes::v0::jobs::add_comment))
+                            .route("/close", post(routes::v0::jobs::close_job)),
                     )
                     .route(
                         "/resources",

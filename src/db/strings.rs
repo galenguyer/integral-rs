@@ -13,6 +13,7 @@ lazy_static! {
     pub(crate) static ref CREATE_JOB: &'static str =
         r"INSERT INTO jobs(id,synopsis,location,created_by) VALUES (?, ?, ?, ?) RETURNING *";
     pub(crate) static ref GET_JOB_BY_ID: &'static str = r"SELECT * FROM jobs WHERE id = ?";
+    pub(crate) static ref CLOSE_JOB: &'static str = r"UPDATE jobs SET closed_at = (strftime('%s','now')), closed_by = ? WHERE id = ?";
     pub(crate) static ref GET_COMMENTS_FOR_JOB: &'static str =
         r"SELECT * FROM comments WHERE job_id = ?";
     pub(crate) static ref ADD_COMMENT: &'static str =

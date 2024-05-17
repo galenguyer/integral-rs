@@ -93,3 +93,16 @@ pub async fn add_comment(
 
     Ok(new_comment)
 }
+
+pub async fn close_job(
+    pool: &Pool<Sqlite>,
+    job_id: &str,
+    closed_by: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(&strings::CLOSE_JOB)
+    .bind(closed_by)
+    .bind(job_id)
+    .fetch_one(pool)
+    .await?;
+    Ok(())
+}

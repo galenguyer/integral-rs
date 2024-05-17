@@ -95,3 +95,25 @@ pub async fn add_comment(
         ),
     }
 }
+
+pub async fn close_job(
+    Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Jwt(user): Jwt,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
+    if let Some(id) = params.get("id") {
+        let created_comment = db::jobs::close_job(&pool, &id, &user.sub).await;
+        match created_comment {
+            Ok(c) => (StatusCode::OK, Json(json!(c))),
+            Err(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!(e.to_string())),
+            ),
+        }
+    } else {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "missing job id"})),
+        )
+    }
+}
