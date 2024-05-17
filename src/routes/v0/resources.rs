@@ -76,6 +76,27 @@ pub async fn assign(
     Jwt(user): Jwt,
     Json(req): Json<AssignmentRequest>,
 ) -> impl IntoResponse {
+    let resources = db::resources::list(&pool).await;
+    match resources {
+        Ok(resources) => {
+            if resources
+                .iter()
+                .any(|r| r.id == req.resource_id && r.assignment.is_some())
+            {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error": "that resource is already assigned to a job"})),
+                );
+            }
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!(e.to_string())),
+            );
+        }
+    }
+
     let assignment =
         crate::db::assignments::assign(&pool, &req.job_id, &req.resource_id, &user.sub).await;
     match assignment {
