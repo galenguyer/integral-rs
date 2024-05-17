@@ -13,7 +13,8 @@ lazy_static! {
     pub(crate) static ref CREATE_JOB: &'static str =
         r"INSERT INTO jobs(id,synopsis,location,created_by) VALUES (?, ?, ?, ?) RETURNING *";
     pub(crate) static ref GET_JOB_BY_ID: &'static str = r"SELECT * FROM jobs WHERE id = ?";
-    pub(crate) static ref CLOSE_JOB: &'static str = r"UPDATE jobs SET closed_at = (strftime('%s','now')), closed_by = ? WHERE id = ?";
+    pub(crate) static ref CLOSE_JOB: &'static str =
+        r"UPDATE jobs SET closed_at = (strftime('%s','now')), closed_by = ? WHERE id = ?";
     pub(crate) static ref GET_COMMENTS_FOR_JOB: &'static str =
         r"SELECT * FROM comments WHERE job_id = ?";
     pub(crate) static ref ADD_COMMENT: &'static str =
@@ -22,6 +23,7 @@ lazy_static! {
     pub(crate) static ref CREATE_ASSIGNMENT: &'static str = r"INSERT INTO assignments(id,job_id,resource_id,assigned_by) VALUES (?, ?, ?, ?) RETURNING *";
     pub(crate) static ref REMOVE_ASSIGNMENT: &'static str =
         r"UPDATE assignments SET removed_at = (strftime('%s','now')), removed_by = ? WHERE id = ?";
+    pub(crate) static ref CLOSE_ASSIGNMENTS_FOR_JOB: &'static str = r"UPDATE assignments SET removed_at = (strftime('%s','now')), removed_by = ? WHERE job_id = ?";
     pub(crate) static ref CREATE_RESOURCE: &'static str =
         r"INSERT INTO resources(id,display_name,comment) VALUES (?, ?, ?) RETURNING *";
     pub(crate) static ref UPDATE_RESOURCE_IN_SERVICE: &'static str =

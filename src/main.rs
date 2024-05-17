@@ -78,7 +78,7 @@ async fn main() {
                         "/resources/inservice",
                         post(routes::v0::resources::set_in_service),
                     )
-                    .route("/assignments", post(routes::v0::resources::assign)),
+                    .route("/resources/assign", post(routes::v0::resources::assign)),
             ),
         )
         .layer(Extension(sqlite_pool));

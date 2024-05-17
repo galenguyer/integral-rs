@@ -100,9 +100,14 @@ pub async fn close_job(
     closed_by: &str,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(&strings::CLOSE_JOB)
-    .bind(closed_by)
-    .bind(job_id)
-    .fetch_one(pool)
-    .await?;
+        .bind(closed_by)
+        .bind(job_id)
+        .execute(pool)
+        .await?;
+    sqlx::query(&strings::CLOSE_ASSIGNMENTS_FOR_JOB)
+        .bind(closed_by)
+        .bind(job_id)
+        .execute(pool)
+        .await?;
     Ok(())
 }
