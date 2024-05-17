@@ -40,3 +40,16 @@ pub async fn assign(
         .await?;
     Ok(assignment)
 }
+
+pub async fn unassign(
+    pool: &Pool<Sqlite>,
+    assignment_id: &str,
+    assigned_by: &str,
+) -> Result<(), sqlx::Error> {
+    let assignment = sqlx::query(&strings::REMOVE_ASSIGNMENT)
+        .bind(assigned_by)
+        .bind(assignment_id)
+        .fetch_one(pool)
+        .await?;
+    Ok(())
+}

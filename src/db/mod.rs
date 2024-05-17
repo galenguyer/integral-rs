@@ -1,6 +1,6 @@
 pub mod assignments;
-pub mod users;
 pub mod jobs;
 pub mod resources;
+pub mod users;
 
 mod strings;

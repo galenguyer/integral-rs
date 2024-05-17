@@ -50,7 +50,8 @@ pub async fn create_user(
             Json(json!({"error": "Password must be at least 12 characters"})),
         );
     }
-    let user = db::users::create_user(&pool, &signup.email, &signup.password, &signup.display_name).await;
+    let user =
+        db::users::create_user(&pool, &signup.email, &signup.password, &signup.display_name).await;
     match user {
         Ok(user) => (StatusCode::OK, Json(json!({ "token": issue_jwt(user) }))),
         Err(err) => match err {

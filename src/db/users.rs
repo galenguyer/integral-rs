@@ -34,7 +34,7 @@ pub async fn create_user(
     pool: &Pool<Sqlite>,
     email: &str,
     password: &str,
-    display_name: &str
+    display_name: &str,
 ) -> Result<User, sqlx::Error> {
     let mut transaction = pool.begin().await?;
 

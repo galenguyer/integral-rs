@@ -32,7 +32,8 @@ CREATE TABLE comments (
 
 CREATE TABLE resources (
     id TEXT PRIMARY KEY,
-    display_name TEXT NOT NULL,
+    display_name TEXT UNIQUE NOT NULL,
+    in_service BOOLEAN NOT NULL DEFAULT false,
     comment TEXT
 );
 

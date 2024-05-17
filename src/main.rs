@@ -1,6 +1,9 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
-use axum::{routing, Extension, Router};
+use axum::{
+    routing::{self, get, post},
+    Extension, Router,
+};
 use sqlx::{Pool, Sqlite};
 
 mod db;
@@ -51,19 +54,30 @@ async fn main() {
                     .nest(
                         "/users",
                         Router::new()
-                            .route("/whoami", routing::get(routes::v0::login::whoami))
-                            .route("/login", routing::post(routes::v0::login::login))
-                            .route("/signup", routing::post(routes::v0::login::create_user)),
+                            .route("/whoami", get(routes::v0::login::whoami))
+                            .route("/login", post(routes::v0::login::login))
+                            .route("/signup", post(routes::v0::login::create_user)),
                     )
                     .nest(
                         "/jobs",
-                        Router::new().route(
-                            "/",
-                            routing::get(routes::v0::jobs::get_all_jobs)
-                                .post(routes::v0::jobs::create_job),
-                        ).route("/comments", routing::post(routes::v0::jobs::add_comment)),
+                        Router::new()
+                            .route(
+                                "/",
+                                get(routes::v0::jobs::get_all_jobs)
+                                    .post(routes::v0::jobs::create_job),
+                            )
+                            .route("/comments", post(routes::v0::jobs::add_comment)),
                     )
-                    .route("/resources", routing::get(routes::v0::resources::get_all_resources)),
+                    .route(
+                        "/resources",
+                        get(routes::v0::resources::get_all_resources)
+                            .post(routes::v0::resources::create),
+                    )
+                    .route(
+                        "/resources/inservice",
+                        post(routes::v0::resources::set_in_service),
+                    )
+                    .route("/assignments", post(routes::v0::resources::assign)),
             ),
         )
         .layer(Extension(sqlite_pool));
