@@ -79,14 +79,28 @@ pub async fn assign(
     let resources = db::resources::list(&pool).await;
     match resources {
         Ok(resources) => {
-            if resources
-                .iter()
-                .any(|r| r.id == req.resource_id && r.assignment.is_some())
-            {
-                return (
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({"error": "that resource is already assigned to a job"})),
-                );
+            let resource = resources.iter().find(|r| r.id == req.resource_id);
+            match resource {
+                Some(resource) => {
+                    if resource.assignment.is_some() {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            Json(json!({"error": "that resource is already assigned to a job"})),
+                        );
+                    }
+                    if !resource.in_service {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            Json(json!({"error": "that resource is out of service"})),
+                        );
+                    }
+                }
+                None => {
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({"error": "that resource does not exist"})),
+                    );
+                }
             }
         }
         Err(e) => {
