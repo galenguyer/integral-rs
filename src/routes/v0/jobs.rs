@@ -34,9 +34,12 @@ pub async fn get_all_jobs(
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct CreateJob {
     pub synopsis: String,
     pub location: Option<String>,
+    pub caller_name: Option<String>,
+    pub caller_phone: Option<String>,
     pub comments: Option<Vec<String>>,
 }
 
@@ -45,7 +48,15 @@ pub async fn create_job(
     Jwt(user): Jwt,
     Json(data): Json<CreateJob>,
 ) -> impl IntoResponse {
-    let created_job = db::jobs::create_job(&pool, &data.synopsis, data.location, &user.id).await;
+    let created_job = db::jobs::create_job(
+        &pool,
+        &data.synopsis,
+        data.location,
+        data.caller_name,
+        data.caller_phone,
+        &user.id,
+    )
+    .await;
     if let Err(e) = created_job {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -85,8 +96,7 @@ pub async fn add_comment(
     Jwt(user): Jwt,
     Json(data): Json<CreateComment>,
 ) -> impl IntoResponse {
-    let created_comment =
-        db::jobs::add_comment(&pool, &data.job_id, &data.comment, &user.id).await;
+    let created_comment = db::jobs::add_comment(&pool, &data.job_id, &data.comment, &user.id).await;
     match created_comment {
         Ok(c) => (StatusCode::OK, Json(json!(c))),
         Err(e) => (

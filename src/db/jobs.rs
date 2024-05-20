@@ -9,6 +9,8 @@ pub struct Job {
     pub id: String,
     pub synopsis: String,
     pub location: Option<String>,
+    pub caller_name: Option<String>,
+    pub caller_phone: Option<String>,
     pub created_at: i64,
     pub closed_at: Option<i64>,
     pub created_by: String,
@@ -57,6 +59,8 @@ pub async fn create_job(
     pool: &Pool<Sqlite>,
     synopsis: &str,
     location: Option<String>,
+    caller_name: Option<String>,
+    caller_phone: Option<String>,
     created_by: &str,
 ) -> Result<Job, sqlx::Error> {
     let mut transaction = pool.begin().await?;
@@ -67,6 +71,8 @@ pub async fn create_job(
         .bind(id)
         .bind(synopsis)
         .bind(location)
+        .bind(caller_name)
+        .bind(caller_phone)
         .bind(created_by)
         .fetch_one(&mut *transaction)
         .await?;

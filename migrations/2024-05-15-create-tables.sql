@@ -14,13 +14,13 @@ CREATE TABLE jobs (
     id TEXT PRIMARY KEY,
     synopsis TEXT NOT NULL,
     location TEXT,
+    caller_name TEXT,
+    caller_phone TEXT,
     created_at integer(8) not null default (strftime('%s','now')),
     closed_at integer(8),
     created_by TEXT REFERENCES users(id),
     closed_by TEXT REFERENCES users(id)
 );
-
--- TODO: Caller information (properly)
 
 CREATE TABLE comments (
     id TEXT PRIMARY KEY,

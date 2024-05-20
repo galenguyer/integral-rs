@@ -6,17 +6,12 @@ lazy_static! {
             FROM users
             WHERE email = ?1
     ";
-    pub(crate) static ref GET_USER_BY_ID: &'static str = r"
-    SELECT id,email,display_name,phone,password,created_at,admin,enabled
-        FROM users
-        WHERE id = ?1
-    ";
+    pub(crate) static ref GET_USER_BY_ID: &'static str = r"SELECT * FROM users WHERE id = ?1";
     pub(crate) static ref CREATE_USER: &'static str = r"
         INSERT INTO users(id,email,password,display_name) VALUES (?, ?, ?, ?) RETURNING *
     ";
     pub(crate) static ref GET_ALL_JOBS: &'static str = r"SELECT * FROM jobs";
-    pub(crate) static ref CREATE_JOB: &'static str =
-        r"INSERT INTO jobs(id,synopsis,location,created_by) VALUES (?, ?, ?, ?) RETURNING *";
+    pub(crate) static ref CREATE_JOB: &'static str = r"INSERT INTO jobs(id,synopsis,location,caller_name,caller_phone,created_by) VALUES (?, ?, ?, ?, ?, ?) RETURNING *";
     pub(crate) static ref GET_JOB_BY_ID: &'static str = r"SELECT * FROM jobs WHERE id = ?";
     pub(crate) static ref CLOSE_JOB: &'static str =
         r"UPDATE jobs SET closed_at = (strftime('%s','now')), closed_by = ? WHERE id = ?";
