@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use axum::{
-    http::StatusCode, response::IntoResponse, Extension, Json,
-};
+use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::{Pool, Sqlite};

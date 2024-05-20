@@ -93,7 +93,9 @@ where
                     Ok(user) => Ok(Self(user)),
                     Err(e) => Err((
                         StatusCode::UNAUTHORIZED,
-                        Json(json!({"error": "error fetching user from db", "details": e.to_string()})),
+                        Json(
+                            json!({"error": "error fetching user from db", "details": e.to_string()}),
+                        ),
                     )),
                 }
             }
