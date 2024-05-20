@@ -80,7 +80,7 @@ pub async fn assign(
             let resource = resources.iter().find(|r| r.id == req.resource_id);
             match resource {
                 Some(resource) => {
-                    if resource.assignment.is_some() {
+                    if resource.current_assignment.is_some() {
                         return (
                             StatusCode::BAD_REQUEST,
                             Json(json!({"error": "that resource is already assigned to a job"})),

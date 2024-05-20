@@ -12,7 +12,7 @@ pub struct Resource {
     pub comment: Option<String>,
     pub in_service: bool,
     #[sqlx(skip)]
-    pub assignment: Option<Assignment>,
+    pub current_assignment: Option<Assignment>,
 }
 
 pub async fn create_resource(
@@ -52,7 +52,7 @@ pub async fn list(pool: &Pool<Sqlite>) -> Result<Vec<Resource>, sqlx::Error> {
             display_name: row.get("display_name"),
             in_service: row.get("in_service"),
             comment: row.get("comment"),
-            assignment: match row.get::<Option<String>, _>("aa_id") {
+            current_assignment: match row.get::<Option<String>, _>("aa_id") {
                 Some(_) => Some(Assignment {
                     id: row.get("aa_id"),
                     job_id: row.get("job_id"),
