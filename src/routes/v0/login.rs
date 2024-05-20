@@ -78,7 +78,7 @@ pub async fn login(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
     Json(login_req): Json<Login>,
 ) -> impl IntoResponse {
-    let user = db::users::get_user(&pool, &login_req.email).await;
+    let user = db::users::get_user_by_email(&pool, &login_req.email).await;
     let user = match user {
         Ok(user) => user,
         Err(err) => match err {

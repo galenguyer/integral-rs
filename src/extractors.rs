@@ -1,17 +1,22 @@
 use std::collections::BTreeMap;
 use std::env;
+use std::sync::Arc;
 
-use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::{header, request::Parts, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::response::Response;
+use axum::{async_trait, Extension, RequestPartsExt};
 use hmac::{Hmac, Mac};
 use jwt::VerifyWithKey;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::Sha256;
+use sqlx::{Pool, Sqlite};
+
+use crate::db;
+use crate::db::users::User;
 
 lazy_static! {
     static ref JWT_SECRET: String = env::var("JWT_SECRET").unwrap();
@@ -29,7 +34,7 @@ pub struct Token {
     pub email: String,
     pub admin: bool,
 }
-pub struct Jwt(pub Token);
+pub struct Jwt(pub User);
 
 #[async_trait]
 impl<S> FromRequestParts<S> for Jwt
@@ -49,34 +54,12 @@ where
             Some(header) => {
                 let key: Hmac<Sha256> = Hmac::new_from_slice((*JWT_SECRET).as_bytes()).unwrap();
                 let token = header.replace("Bearer ", "");
-                // if token.starts_with("api_") {
-                //     let mut hasher = Sha256::new();
-                //     hasher.update(token.as_bytes());
-                //     let digest = hasher.finalize();
-                //     let hash = hex::encode(digest);
+                let Extension(db_pool) = parts
+                    .extract::<Extension<Arc<Pool<Sqlite>>>>()
+                    .await
+                    .map_err(|err| err.into_response())
+                    .unwrap();
 
-                //     let db_pool = req.extensions().get::<Arc<Pool<Postgres>>>().unwrap();
-
-                //     let user = match crate::db::users::get_user_from_api_key(db_pool, &hash).await {
-                //         Ok(user) => user,
-                //         Err(err) => {
-                //             return Err((
-                //                 StatusCode::INTERNAL_SERVER_ERROR,
-                //                 Json(json!({"error": err.to_string()})),
-                //             ))
-                //         }
-                //     };
-                //     let token = Token {
-                //         iss: "api".to_owned(),
-                //         sub: user.id,
-                //         iat: 0,
-                //         exp: 0,
-                //         dn: user.email.to_owned(),
-                //         email: user.email.to_owned(),
-                //         admin: user.admin,
-                //     };
-                //     return Ok(Self(token));
-                // }
                 let claims: BTreeMap<String, String> = match token.verify_with_key(&key) {
                     Ok(claims) => claims,
                     Err(_) => {
@@ -105,7 +88,14 @@ where
                     ));
                 }
 
-                return Ok(Self(token));
+                let user = db::users::get_user(&db_pool, &token.sub).await;
+                match user {
+                    Ok(user) => Ok(Self(user)),
+                    Err(e) => Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(json!({"error": "error fetching user from db", "details": e.to_string()})),
+                    )),
+                }
             }
             None => {
                 return Err((

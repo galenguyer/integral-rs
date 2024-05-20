@@ -22,8 +22,16 @@ pub struct User {
     pub enabled: bool,
 }
 
-pub async fn get_user(pool: &Pool<Sqlite>, email: &str) -> Result<User, sqlx::Error> {
-    let user = sqlx::query_as::<_, User>(&strings::GET_USER)
+pub async fn get_user(pool: &Pool<Sqlite>, id: &str) -> Result<User, sqlx::Error> {
+    let user = sqlx::query_as::<_, User>(&strings::GET_USER_BY_ID)
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
+    Ok(user)
+}
+
+pub async fn get_user_by_email(pool: &Pool<Sqlite>, email: &str) -> Result<User, sqlx::Error> {
+    let user = sqlx::query_as::<_, User>(&strings::GET_USER_BY_EMAIL)
         .bind(email)
         .fetch_one(pool)
         .await?;

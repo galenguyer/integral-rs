@@ -45,7 +45,7 @@ pub async fn create_job(
     Jwt(user): Jwt,
     Json(data): Json<CreateJob>,
 ) -> impl IntoResponse {
-    let created_job = db::jobs::create_job(&pool, &data.synopsis, data.location, &user.sub).await;
+    let created_job = db::jobs::create_job(&pool, &data.synopsis, data.location, &user.id).await;
     if let Err(e) = created_job {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -56,7 +56,7 @@ pub async fn create_job(
 
     if let Some(comments) = data.comments {
         for comment in comments {
-            if let Err(e) = db::jobs::add_comment(&pool, &created_job.id, &comment, &user.sub).await
+            if let Err(e) = db::jobs::add_comment(&pool, &created_job.id, &comment, &user.id).await
             {
                 tracing::error!("{:?}", e);
             }
@@ -86,7 +86,7 @@ pub async fn add_comment(
     Json(data): Json<CreateComment>,
 ) -> impl IntoResponse {
     let created_comment =
-        db::jobs::add_comment(&pool, &data.job_id, &data.comment, &user.sub).await;
+        db::jobs::add_comment(&pool, &data.job_id, &data.comment, &user.id).await;
     match created_comment {
         Ok(c) => (StatusCode::OK, Json(json!(c))),
         Err(e) => (
@@ -102,7 +102,7 @@ pub async fn close_job(
     Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
     if let Some(id) = params.get("id") {
-        let created_comment = db::jobs::close_job(&pool, &id, &user.sub).await;
+        let created_comment = db::jobs::close_job(&pool, &id, &user.id).await;
         match created_comment {
             Ok(c) => (StatusCode::OK, Json(json!(c))),
             Err(e) => (

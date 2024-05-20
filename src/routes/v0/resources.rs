@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use axum::{
-    debug_handler, extract::Query, http::StatusCode, response::IntoResponse, Extension, Json,
+    http::StatusCode, response::IntoResponse, Extension, Json,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -112,7 +112,7 @@ pub async fn assign(
     }
 
     let assignment =
-        crate::db::assignments::assign(&pool, &req.job_id, &req.resource_id, &user.sub).await;
+        crate::db::assignments::assign(&pool, &req.job_id, &req.resource_id, &user.id).await;
     match assignment {
         Ok(job) => (StatusCode::OK, Json(json!(job))),
         Err(e) => (
