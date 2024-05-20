@@ -34,14 +34,23 @@ pub async fn create_resource(
 
 pub async fn set_in_service(
     pool: &Pool<Sqlite>,
-    id: &str,
+    resource_id: &str,
     in_service: bool,
+    assigned_by: &str,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(&strings::UPDATE_RESOURCE_IN_SERVICE)
         .bind(in_service)
-        .bind(id)
+        .bind(resource_id)
         .execute(pool)
         .await?;
+
+    if !in_service {
+        sqlx::query(&strings::UPDATE_ASSIGNMENTS_RESOURCE_OOS)
+            .bind(assigned_by)
+            .bind(resource_id)
+            .execute(pool)
+            .await?;
+    }
     Ok(())
 }
 

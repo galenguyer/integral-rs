@@ -50,10 +50,10 @@ pub(crate) struct SetResourceInServiceRequest {
 }
 pub async fn set_in_service(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
-    Jwt(_user): Jwt,
+    Jwt(user): Jwt,
     Json(req): Json<SetResourceInServiceRequest>,
 ) -> impl IntoResponse {
-    let resource = db::resources::set_in_service(&pool, &req.id, req.in_service).await;
+    let resource = db::resources::set_in_service(&pool, &req.id, req.in_service, &user.id).await;
     match resource {
         Ok(res) => (StatusCode::OK, Json(json!(res))),
         Err(e) => (

@@ -28,6 +28,10 @@ lazy_static! {
         r"INSERT INTO resources(id,display_name,comment) VALUES (?, ?, ?) RETURNING *";
     pub(crate) static ref UPDATE_RESOURCE_IN_SERVICE: &'static str =
         r"UPDATE resources SET in_service = ? WHERE id = ?";
+    pub(crate) static ref UPDATE_ASSIGNMENTS_RESOURCE_OOS: &'static str =
+        r"UPDATE assignments
+            SET removed_at = (strftime('%s','now')), removed_by = ?
+            WHERE resource_id = ? AND removed_at IS NULL";
     pub(crate) static ref GET_RESOURCES: &'static str = r"
         WITH aa AS (
             SELECT id,job_id,resource_id,assigned_at,removed_at,assigned_by,removed_by
