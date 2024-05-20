@@ -119,3 +119,24 @@ pub async fn assign(
         ),
     }
 }
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct UnAssignmentRequest {
+    assignment_id: String,
+}
+pub async fn unassign(
+    Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Jwt(user): Jwt,
+    Json(req): Json<UnAssignmentRequest>,
+) -> impl IntoResponse {
+    let assignment =
+        crate::db::assignments::unassign(&pool, &req.assignment_id, &user.id).await;
+    match assignment {
+        Ok(job) => (StatusCode::OK, Json(json!(job))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!(e.to_string())),
+        ),
+    }
+}

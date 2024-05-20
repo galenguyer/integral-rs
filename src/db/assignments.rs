@@ -46,10 +46,10 @@ pub async fn unassign(
     assignment_id: &str,
     assigned_by: &str,
 ) -> Result<(), sqlx::Error> {
-    let assignment = sqlx::query(&strings::REMOVE_ASSIGNMENT)
+    let _assignment = sqlx::query(&strings::REMOVE_ASSIGNMENT)
         .bind(assigned_by)
         .bind(assignment_id)
-        .fetch_one(pool)
+        .execute(pool)
         .await?;
     Ok(())
 }
