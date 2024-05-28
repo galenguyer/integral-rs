@@ -79,8 +79,8 @@ async fn main() {
                         post(routes::v0::resources::set_in_service),
                     )
                     .route(
-                        "/resources/assign",
-                        post(routes::v0::resources::assign).delete(routes::v0::resources::unassign),
+                        "/assignments",
+                        get(routes::v0::resources::get_assignments_for_job).post(routes::v0::resources::assign).delete(routes::v0::resources::unassign),
                     ),
             ),
         )

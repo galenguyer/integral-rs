@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
+use axum::{extract::Query, http::StatusCode, response::IntoResponse, Extension, Json};
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::{Pool, Sqlite};
@@ -138,5 +138,27 @@ pub async fn unassign(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!(e.to_string())),
         ),
+    }
+}
+
+pub async fn get_assignments_for_job(
+    Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Query(params): Query<HashMap<String, String>>,
+    Jwt(_user): Jwt,
+) -> impl IntoResponse {
+    if let Some(id) = params.get("id") {
+        let assignments = db::assignments::get_assignments_for_job(&pool, &id).await;
+        match assignments {
+            Ok(assigns) => (StatusCode::OK, Json(json!(assigns))),
+            Err(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!(e.to_string())),
+            ),
+        }
+    } else {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "missing id"})),
+        )
     }
 }
