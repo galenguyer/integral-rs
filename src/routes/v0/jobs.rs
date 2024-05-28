@@ -127,6 +127,7 @@ pub async fn close_job(
         let created_comment = db::jobs::close_job(&pool, &id, &user.id).await;
 
         event_tx.send(Event::Job(id.clone())).ok();
+        event_tx.send(Event::Resource(id.clone())).ok();
 
         match created_comment {
             Ok(c) => (StatusCode::OK, Json(json!(c))),
