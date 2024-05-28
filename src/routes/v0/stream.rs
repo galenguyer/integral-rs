@@ -8,13 +8,13 @@ use serde::Serialize;
 use serde_json::json;
 use tokio::sync::broadcast;
 
-use crate::extractors::{get_user_from_token, Json, Jwt};
+use crate::extractors::{get_user_from_token, Json};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Event {
-    Job(()),
-    Comment(i64),
+    Job(String),
+    Resource(String),
 }
 
 pub async fn stream(
@@ -38,17 +38,19 @@ pub async fn stream(
     }
 
     impl Drop for Guard {
-        fn drop(&mut self) {}
+        fn drop(&mut self) {
+            tracing::debug!(user = self.user_id, "closed stream")
+        }
     }
 
-    tracing::info!("stream opened");
-
     let stream = async_stream::stream! {
-        let _guard = Guard {
+        let guard = Guard {
             user_id: user.id.clone()
         };
+        tracing::debug!(user=guard.user_id, "opened stream");
         let mut rx = event_tx.subscribe();
         while let Ok(event) = rx.recv().await {
+            tracing::debug!(user=guard.user_id, "sent event");
             yield SseEvent::default().json_data(event);
         }
     };

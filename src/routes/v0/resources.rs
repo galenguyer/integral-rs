@@ -4,8 +4,11 @@ use axum::{extract::Query, http::StatusCode, response::IntoResponse, Extension, 
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::{Pool, Sqlite};
+use tokio::sync::broadcast;
 
 use crate::{db, extractors::Jwt};
+
+use super::stream::Event;
 
 pub async fn get_all_resources(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
@@ -29,10 +32,12 @@ pub(crate) struct ResourceCreationRequest {
 }
 pub async fn create(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Extension(event_tx): Extension<Arc<broadcast::Sender<Event>>>,
     Jwt(_user): Jwt,
     Json(req): Json<ResourceCreationRequest>,
 ) -> impl IntoResponse {
     let resource = db::resources::create_resource(&pool, &req.display_name, req.comment).await;
+    event_tx.send(Event::Resource(req.display_name)).ok();
     match resource {
         Ok(res) => (StatusCode::OK, Json(json!(res))),
         Err(e) => (
@@ -50,10 +55,12 @@ pub(crate) struct SetResourceInServiceRequest {
 }
 pub async fn set_in_service(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Extension(event_tx): Extension<Arc<broadcast::Sender<Event>>>,
     Jwt(user): Jwt,
     Json(req): Json<SetResourceInServiceRequest>,
 ) -> impl IntoResponse {
     let resource = db::resources::set_in_service(&pool, &req.id, req.in_service, &user.id).await;
+    event_tx.send(Event::Resource(req.id)).ok();
     match resource {
         Ok(res) => (StatusCode::OK, Json(json!(res))),
         Err(e) => (
@@ -71,6 +78,7 @@ pub(crate) struct AssignmentRequest {
 }
 pub async fn assign(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Extension(event_tx): Extension<Arc<broadcast::Sender<Event>>>,
     Jwt(user): Jwt,
     Json(req): Json<AssignmentRequest>,
 ) -> impl IntoResponse {
@@ -111,6 +119,10 @@ pub async fn assign(
 
     let assignment =
         crate::db::assignments::assign(&pool, &req.job_id, &req.resource_id, &user.id).await;
+
+    event_tx.send(Event::Resource(req.resource_id)).ok();
+    event_tx.send(Event::Job(req.job_id)).ok();
+
     match assignment {
         Ok(job) => (StatusCode::OK, Json(json!(job))),
         Err(e) => (
@@ -127,10 +139,17 @@ pub(crate) struct UnAssignmentRequest {
 }
 pub async fn unassign(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Extension(event_tx): Extension<Arc<broadcast::Sender<Event>>>,
     Jwt(user): Jwt,
     Json(req): Json<UnAssignmentRequest>,
 ) -> impl IntoResponse {
     let assignment = crate::db::assignments::unassign(&pool, &req.assignment_id, &user.id).await;
+
+    event_tx
+        .send(Event::Resource(req.assignment_id.clone()))
+        .ok();
+    event_tx.send(Event::Job(req.assignment_id)).ok();
+
     match assignment {
         Ok(job) => (StatusCode::OK, Json(json!(job))),
         Err(e) => (

@@ -80,20 +80,7 @@ pub async fn create_job(
 
     let job = db::jobs::get_job_by_id(&pool, &created_job.id).await;
 
-    match event_tx.send(Event::Job(())) {
-        Ok(rcount) => {
-            tracing::debug!(
-                id = created_job.id,
-                recievers = rcount - 1,
-                "sent job event"
-            );
-        }
-        Err(e) => tracing::error!(
-            id = created_job.id,
-            error = format!("{}", e),
-            "error sending job event"
-        ),
-    }
+    event_tx.send(Event::Job(created_job.id.clone())).ok();
 
     match job {
         Ok(job) => (StatusCode::OK, Json(json!(job))),
@@ -113,10 +100,14 @@ pub(crate) struct CreateComment {
 
 pub async fn add_comment(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Extension(event_tx): Extension<Arc<broadcast::Sender<Event>>>,
     Jwt(user): Jwt,
     Json(data): Json<CreateComment>,
 ) -> impl IntoResponse {
     let created_comment = db::jobs::add_comment(&pool, &data.job_id, &data.comment, &user.id).await;
+
+    event_tx.send(Event::Job(data.job_id.clone())).ok();
+
     match created_comment {
         Ok(c) => (StatusCode::OK, Json(json!(c))),
         Err(e) => (
@@ -135,16 +126,7 @@ pub async fn close_job(
     if let Some(id) = params.get("id") {
         let created_comment = db::jobs::close_job(&pool, &id, &user.id).await;
 
-        match event_tx.send(Event::Job(())) {
-            Ok(rcount) => {
-                tracing::debug!(id = id.clone(), recievers = rcount - 1, "sent job event");
-            }
-            Err(e) => tracing::error!(
-                id = id.clone(),
-                error = format!("{}", e),
-                "error sending job event"
-            ),
-        }
+        event_tx.send(Event::Job(id.clone())).ok();
 
         match created_comment {
             Ok(c) => (StatusCode::OK, Json(json!(c))),
