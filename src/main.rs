@@ -80,7 +80,9 @@ async fn main() {
                     )
                     .route(
                         "/assignments",
-                        get(routes::v0::resources::get_assignments_for_job).post(routes::v0::resources::assign).delete(routes::v0::resources::unassign),
+                        get(routes::v0::resources::get_assignments_for_job)
+                            .post(routes::v0::resources::assign)
+                            .delete(routes::v0::resources::unassign),
                     ),
             ),
         )

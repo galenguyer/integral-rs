@@ -23,7 +23,10 @@ pub async fn get_active_assignments(pool: &Pool<Sqlite>) -> Result<Vec<Assignmen
     Ok(assignments)
 }
 
-pub async fn get_assignments_for_job(pool: &Pool<Sqlite>, job_id: &str) -> Result<Vec<Assignment>, sqlx::Error> {
+pub async fn get_assignments_for_job(
+    pool: &Pool<Sqlite>,
+    job_id: &str,
+) -> Result<Vec<Assignment>, sqlx::Error> {
     let assignments = sqlx::query_as::<_, Assignment>(&strings::GET_ASSIGNMENTS_BY_JOBID)
         .bind(&job_id)
         .fetch_all(pool)

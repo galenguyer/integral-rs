@@ -20,7 +20,8 @@ lazy_static! {
     pub(crate) static ref ADD_COMMENT: &'static str =
         r"INSERT INTO comments(id,job_id,comment,created_by) VALUES (?, ?, ?, ?) RETURNING *";
     pub(crate) static ref GET_ACTIVE_ASSIGNMENTS: &'static str = r"SELECT * FROM assignments WHERE removed_at IS NULL AND job_id IN (SELECT id FROM jobs WHERE closed_at IS NULL);";
-    pub(crate) static ref GET_ASSIGNMENTS_BY_JOBID: &'static str = r"SELECT * FROM assignments WHERE job_id = ?";
+    pub(crate) static ref GET_ASSIGNMENTS_BY_JOBID: &'static str =
+        r"SELECT * FROM assignments WHERE job_id = ?";
     pub(crate) static ref CREATE_ASSIGNMENT: &'static str = r"INSERT INTO assignments(id,job_id,resource_id,assigned_by) VALUES (?, ?, ?, ?) RETURNING *";
     pub(crate) static ref REMOVE_ASSIGNMENT: &'static str =
         r"UPDATE assignments SET removed_at = (strftime('%s','now')), removed_by = ? WHERE id = ?";
@@ -29,8 +30,7 @@ lazy_static! {
         r"INSERT INTO resources(id,display_name,comment) VALUES (?, ?, ?) RETURNING *";
     pub(crate) static ref UPDATE_RESOURCE_IN_SERVICE: &'static str =
         r"UPDATE resources SET in_service = ? WHERE id = ?";
-    pub(crate) static ref UPDATE_ASSIGNMENTS_RESOURCE_OOS: &'static str =
-        r"UPDATE assignments
+    pub(crate) static ref UPDATE_ASSIGNMENTS_RESOURCE_OOS: &'static str = r"UPDATE assignments
             SET removed_at = (strftime('%s','now')), removed_by = ?
             WHERE resource_id = ? AND removed_at IS NULL";
     pub(crate) static ref GET_RESOURCES: &'static str = r"

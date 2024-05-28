@@ -130,8 +130,7 @@ pub async fn unassign(
     Jwt(user): Jwt,
     Json(req): Json<UnAssignmentRequest>,
 ) -> impl IntoResponse {
-    let assignment =
-        crate::db::assignments::unassign(&pool, &req.assignment_id, &user.id).await;
+    let assignment = crate::db::assignments::unassign(&pool, &req.assignment_id, &user.id).await;
     match assignment {
         Ok(job) => (StatusCode::OK, Json(json!(job))),
         Err(e) => (
