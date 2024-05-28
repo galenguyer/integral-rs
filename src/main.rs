@@ -5,6 +5,7 @@ use axum::{
     Extension, Router,
 };
 use sqlx::{Pool, Sqlite};
+use tokio::sync::broadcast;
 
 mod db;
 mod extractors;
@@ -41,16 +42,17 @@ async fn main() {
             .unwrap(),
     );
 
+    let (event_tx, _event_rx) = broadcast::channel::<routes::v0::stream::Event>(16);
+    let event_tx = Arc::new(event_tx);
+
     let app = Router::new()
         .nest(
             "/api",
             Router::new().nest(
                 "/v0",
                 Router::new()
-                    .route(
-                        "/features",
-                        routing::get(routes::v0::features::get_features),
-                    )
+                    .route("/stream", get(routes::v0::stream::stream))
+                    .route("/features", get(routes::v0::features::get_features))
                     .nest(
                         "/users",
                         Router::new()
@@ -86,7 +88,8 @@ async fn main() {
                     ),
             ),
         )
-        .layer(Extension(sqlite_pool));
+        .layer(Extension(sqlite_pool))
+        .layer(Extension(event_tx));
 
     let bind_address: SocketAddr = env::var("BIND_ADDRESS")
         .unwrap_or_else(|_| String::from("0.0.0.0:8080"))

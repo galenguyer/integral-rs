@@ -52,7 +52,6 @@ where
 
         match auth_header {
             Some(header) => {
-                let key: Hmac<Sha256> = Hmac::new_from_slice((*JWT_SECRET).as_bytes()).unwrap();
                 let token = header.replace("Bearer ", "");
                 let Extension(db_pool) = parts
                     .extract::<Extension<Arc<Pool<Sqlite>>>>()
@@ -60,43 +59,11 @@ where
                     .map_err(|err| err.into_response())
                     .unwrap();
 
-                let claims: BTreeMap<String, String> = match token.verify_with_key(&key) {
-                    Ok(claims) => claims,
-                    Err(_) => {
-                        return Err((
-                            StatusCode::UNAUTHORIZED,
-                            Json(json!({ "error": "Invalid token" })),
-                        ))
-                    }
-                };
+                let user = get_user_from_token(&db_pool, &token).await;
 
-                let token = Token {
-                    iss: claims.get("iss").unwrap().to_string(),
-                    sub: claims.get("sub").unwrap().to_string(),
-                    iat: claims.get("iat").unwrap().parse().unwrap(),
-                    exp: claims.get("exp").unwrap().parse().unwrap(),
-                    dn: claims.get("dn").unwrap().to_string(),
-                    email: claims.get("email").unwrap().to_string(),
-                    admin: claims.get("admin").unwrap().parse().unwrap(),
-                };
-
-                let now = chrono::Utc::now().timestamp();
-                if token.iat > now || token.exp < now {
-                    return Err((
-                        StatusCode::UNAUTHORIZED,
-                        Json(json!({"error": "Invalid token"})),
-                    ));
-                }
-
-                let user = db::users::get_user(&db_pool, &token.sub).await;
                 match user {
                     Ok(user) => Ok(Self(user)),
-                    Err(e) => Err((
-                        StatusCode::UNAUTHORIZED,
-                        Json(
-                            json!({"error": "error fetching user from db", "details": e.to_string()}),
-                        ),
-                    )),
+                    Err(e) => Err(e),
                 }
             }
             None => {
@@ -106,6 +73,49 @@ where
                 ))
             }
         }
+    }
+}
+
+pub async fn get_user_from_token(
+    pool: &Pool<Sqlite>,
+    token: &str,
+) -> Result<User, (axum::http::StatusCode, Json<serde_json::Value>)> {
+    let key: Hmac<Sha256> = Hmac::new_from_slice((*JWT_SECRET).as_bytes()).unwrap();
+
+    let claims: BTreeMap<String, String> = match token.verify_with_key(&key) {
+        Ok(claims) => claims,
+        Err(_) => {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "error": "Invalid token" })),
+            ))
+        }
+    };
+
+    let token = Token {
+        iss: claims.get("iss").unwrap().to_string(),
+        sub: claims.get("sub").unwrap().to_string(),
+        iat: claims.get("iat").unwrap().parse().unwrap(),
+        exp: claims.get("exp").unwrap().parse().unwrap(),
+        dn: claims.get("dn").unwrap().to_string(),
+        email: claims.get("email").unwrap().to_string(),
+        admin: claims.get("admin").unwrap().parse().unwrap(),
+    };
+
+    let now = chrono::Utc::now().timestamp();
+    if token.iat > now || token.exp < now {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({"error": "Invalid token"})),
+        ));
+    }
+
+    match db::users::get_user(&pool, &token.sub).await {
+        Ok(user) => Ok(user),
+        Err(e) => Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({"error": "error fetching user from db", "details": e.to_string()})),
+        )),
     }
 }
 

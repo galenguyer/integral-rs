@@ -4,8 +4,11 @@ use axum::{extract::Query, http::StatusCode, response::IntoResponse, Extension, 
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::{Pool, Sqlite};
+use tokio::sync::broadcast;
 
 use crate::{db, extractors::Jwt};
+
+use super::stream::Event;
 
 pub async fn get_all_jobs(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
@@ -45,6 +48,7 @@ pub(crate) struct CreateJob {
 
 pub async fn create_job(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Extension(event_tx): Extension<Arc<broadcast::Sender<Event>>>,
     Jwt(user): Jwt,
     Json(data): Json<CreateJob>,
 ) -> impl IntoResponse {
@@ -75,6 +79,22 @@ pub async fn create_job(
     }
 
     let job = db::jobs::get_job_by_id(&pool, &created_job.id).await;
+
+    match event_tx.send(Event::Job(())) {
+        Ok(rcount) => {
+            tracing::debug!(
+                id = created_job.id,
+                recievers = rcount - 1,
+                "sent job event"
+            );
+        }
+        Err(e) => tracing::error!(
+            id = created_job.id,
+            error = format!("{}", e),
+            "error sending job event"
+        ),
+    }
+
     match job {
         Ok(job) => (StatusCode::OK, Json(json!(job))),
         Err(e) => (
@@ -108,11 +128,24 @@ pub async fn add_comment(
 
 pub async fn close_job(
     Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Extension(event_tx): Extension<Arc<broadcast::Sender<Event>>>,
     Jwt(user): Jwt,
     Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
     if let Some(id) = params.get("id") {
         let created_comment = db::jobs::close_job(&pool, &id, &user.id).await;
+
+        match event_tx.send(Event::Job(())) {
+            Ok(rcount) => {
+                tracing::debug!(id = id.clone(), recievers = rcount - 1, "sent job event");
+            }
+            Err(e) => tracing::error!(
+                id = id.clone(),
+                error = format!("{}", e),
+                "error sending job event"
+            ),
+        }
+
         match created_comment {
             Ok(c) => (StatusCode::OK, Json(json!(c))),
             Err(e) => (
