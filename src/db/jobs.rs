@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use snowflake::SnowflakeGenerator;
 use sqlx::{FromRow, Pool, Sqlite};
 
+use super::assignments::{get_assignments_for_job, Assignment};
+
 #[derive(Serialize, Deserialize, FromRow, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Job {
@@ -17,6 +19,8 @@ pub struct Job {
     pub closed_by: Option<String>,
     #[sqlx(skip)]
     pub comments: Vec<Comment>,
+    #[sqlx(skip)]
+    pub assignments: Vec<Assignment>,
 }
 
 #[derive(Default, Serialize, Deserialize, FromRow, Debug)]
@@ -48,7 +52,9 @@ pub async fn get_job_by_id(pool: &Pool<Sqlite>, id: &str) -> Result<Option<Job>,
                 .bind(id)
                 .fetch_all(pool)
                 .await?;
+            let assignments = get_assignments_for_job(pool, id).await.unwrap_or_default();
             job.comments = comments;
+            job.assignments = assignments;
             Ok(Some(job))
         }
         None => Ok(None),
