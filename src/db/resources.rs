@@ -101,7 +101,7 @@ pub async fn list(pool: &Pool<Sqlite>) -> Result<Vec<Resource>, sqlx::Error> {
     .await
     .unwrap();
 
-    let resp = ureq::post("http://localhost:8081/api/v0/geocode/reverse/bulk")
+    let resp = ureq::post("http://127.0.0.1:8081/api/v0/geocode/reverse/bulk")
         .send_json(ureq::json!(locations
             .iter()
             .map(|loc| ureq::json!({"lat": loc.latitude, "lon": loc.longitude}))
