@@ -13,6 +13,18 @@ pub struct Resource {
     pub in_service: bool,
     #[sqlx(skip)]
     pub current_assignment: Option<Assignment>,
+    #[sqlx(skip)]
+    pub location: Option<GeocodeResponse>,
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, FromRow, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceLocation {
+    #[serde(skip)]
+    pub resource_id: String,
+    pub at_time: i64,
+    pub latitude: String,
+    pub longitude: String,
 }
 
 pub async fn create_resource(
@@ -54,7 +66,50 @@ pub async fn set_in_service(
     Ok(())
 }
 
+#[derive(Serialize, Deserialize, FromRow, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GeocodeResponse {
+    pub lat: String,
+    pub lon: String,
+    pub distance: f64,
+    pub address: RadarAddress,
+}
+#[derive(Serialize, Deserialize, FromRow, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RadarAddress {
+    address_label: Option<String>,
+    city: Option<String>,
+    country: Option<String>,
+    country_code: Option<String>,
+    county: Option<String>,
+    formatted_address: Option<String>,
+    latitude: Option<f64>,
+    layer: Option<String>,
+    longitude: Option<f64>,
+    number: Option<String>,
+    postal_code: Option<String>,
+    state: Option<String>,
+    state_code: Option<String>,
+    street: Option<String>,
+}
+
 pub async fn list(pool: &Pool<Sqlite>) -> Result<Vec<Resource>, sqlx::Error> {
+    let locations = sqlx::query_as::<_, ResourceLocation>(
+        "SELECT * FROM resource_locations GROUP BY resource_id HAVING at_time = MAX(at_time)",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap();
+
+    let resp = ureq::post("http://localhost:8081/api/v0/geocode/reverse/bulk")
+        .send_json(ureq::json!(locations
+            .iter()
+            .map(|loc| ureq::json!({"lat": loc.latitude, "lon": loc.longitude}))
+            .collect::<Vec<_>>()))
+        .unwrap()
+        .into_json::<Vec<GeocodeResponse>>()
+        .unwrap();
+
     let resources = sqlx::query(&strings::GET_RESOURCES)
         .map(|row: SqliteRow| Resource {
             id: row.get("resource_id"),
@@ -73,6 +128,15 @@ pub async fn list(pool: &Pool<Sqlite>) -> Result<Vec<Resource>, sqlx::Error> {
                 }),
                 None => None,
             },
+            location: resp
+                .iter()
+                .find(|gcr| {
+                    let a = locations
+                        .iter()
+                        .find(|l| l.resource_id == row.get::<String, _>("resource_id"));
+                    a.is_some_and(|b| b.latitude == gcr.lat && b.longitude == gcr.lon)
+                })
+                .cloned(),
         })
         .fetch_all(pool)
         .await?;
