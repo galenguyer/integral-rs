@@ -180,3 +180,29 @@ pub async fn get_assignments_for_job(
         )
     }
 }
+
+
+// TODO: Auth
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SetResourceLocationRequest {
+    id: String,
+    lat: String,
+    lon: String,
+}
+pub async fn set_resource_location(
+    Extension(pool): Extension<Arc<Pool<Sqlite>>>,
+    Extension(event_tx): Extension<Arc<broadcast::Sender<Event>>>,
+    Json(req): Json<SetResourceLocationRequest>,
+) -> impl IntoResponse {
+    tracing::info!("received new location for resource {}", req.id);
+    let resource = db::resources::set_location(&pool, &req.id, &req.lat, &req.lon).await;
+    event_tx.send(Event::Resource(req.id)).ok();
+    match resource {
+        Ok(res) => (StatusCode::OK, Json(json!(res))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!(e.to_string())),
+        ),
+    }
+}

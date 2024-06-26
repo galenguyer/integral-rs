@@ -142,3 +142,20 @@ pub async fn list(pool: &Pool<Sqlite>) -> Result<Vec<Resource>, sqlx::Error> {
         .await?;
     Ok(resources)
 }
+
+
+pub async fn set_location(
+    pool: &Pool<Sqlite>,
+    resource_id: &str,
+    latitude: &str,
+    longitude: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("INSERT INTO resource_locations(resource_id,latitude,longitude) VALUES (?, ?, ?)")
+        .bind(resource_id)
+        .bind(latitude)
+        .bind(longitude)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}

@@ -80,6 +80,7 @@ async fn main() {
                         "/resources/inservice",
                         post(routes::v0::resources::set_in_service),
                     )
+                    .route("/resources/location", post(routes::v0::resources::set_resource_location))
                     .route(
                         "/assignments",
                         get(routes::v0::resources::get_assignments_for_job)
